@@ -34,12 +34,25 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            // Разрешение получено - запускаем сервис
-            startMonitoringService()
+            checkAndRequestAllPermissions()
         } else {
             Toast.makeText(
                 this,
-                "Без разрешения на уведомления сервис не может работать",
+                "Service doesn't work",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
+    private val phoneStatePermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            checkAndRequestAllPermissions()
+        } else {
+            Toast.makeText(
+                this,
+                "Satellite state doesn't observe",
                 Toast.LENGTH_LONG
             ).show()
         }
@@ -58,33 +71,30 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Проверяем и запрашиваем разрешение при создании активности
-        checkAndRequestNotificationPermission()
+        checkAndRequestAllPermissions()
     }
 
     override fun onDestroy() {
-        // Останавливаем сервис при уничтожении активности
         stopService(Intent(this, NetworkMonitorService::class.java))
         super.onDestroy()
     }
 
-    private fun checkAndRequestNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            when {
-                ContextCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) == PackageManager.PERMISSION_GRANTED -> {
-                    // Разрешение уже есть - запускаем сервис
-                    startMonitoringService()
-                }
-                else -> {
-                    // Запрашиваем разрешение
-                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                }
-            }
-        } else {
-            // Для версий ниже Android 13 разрешение не требуется
+    private fun checkAndRequestAllPermissions() {
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+        else if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.READ_PHONE_STATE
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            phoneStatePermissionLauncher.launch(Manifest.permission.READ_PHONE_STATE)
+        }
+        else  {
             startMonitoringService()
         }
     }
@@ -173,7 +183,7 @@ fun NetworkHistoryItem(type: TransportType) {
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = type.name,
+                    text = "${type.name} ${type.source}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )

@@ -32,7 +32,10 @@ class TransportTypeListener(context: Context) {
 
     fun createNetworkTransportTypeCallbackFlow(): Flow<List<TransportType>> =
         callbackFlow {
-            val networkRequest: NetworkRequest = NetworkRequest.Builder().build()
+            val networkRequest = NetworkRequest.Builder()
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .removeCapability(NetworkCapabilities.NET_CAPABILITY_NOT_BANDWIDTH_CONSTRAINED)
+                .build()
             val callback = object : ConnectivityManager.NetworkCallback() {
                 override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
                     val result = allTransportTypes.filter { transportType ->
@@ -48,7 +51,8 @@ class TransportTypeListener(context: Context) {
                         trySend(result.map { TransportType(
                             type = it,
                             name = getTransportTypeName(it),
-                            timestamp = System.currentTimeMillis()
+                            timestamp = System.currentTimeMillis(),
+                            source = "c"
                         ) })
                     }
                 }
@@ -62,19 +66,21 @@ class TransportTypeListener(context: Context) {
             }
         }
 
-    private fun getTransportTypeName(ordinal: Int): String {
-        return when (ordinal) {
-            NetworkCapabilities.TRANSPORT_CELLULAR -> "cellular"
-            NetworkCapabilities.TRANSPORT_WIFI -> "wifi"
-            NetworkCapabilities.TRANSPORT_BLUETOOTH -> "bluetooth"
-            NetworkCapabilities.TRANSPORT_ETHERNET -> "ethernet"
-            NetworkCapabilities.TRANSPORT_VPN -> "vpn"
-            NetworkCapabilities.TRANSPORT_WIFI_AWARE -> "wifi-aware"
-            NetworkCapabilities.TRANSPORT_LOWPAN -> "lowpan"
-            NetworkCapabilities.TRANSPORT_USB -> "usb"
-            NetworkCapabilities.TRANSPORT_THREAD -> "thread"
-            NetworkCapabilities.TRANSPORT_SATELLITE -> "satellite"
-            else -> "unknown"
+    companion object {
+        fun getTransportTypeName(ordinal: Int): String {
+            return when (ordinal) {
+                NetworkCapabilities.TRANSPORT_CELLULAR -> "cellular"
+                NetworkCapabilities.TRANSPORT_WIFI -> "wifi"
+                NetworkCapabilities.TRANSPORT_BLUETOOTH -> "bluetooth"
+                NetworkCapabilities.TRANSPORT_ETHERNET -> "ethernet"
+                NetworkCapabilities.TRANSPORT_VPN -> "vpn"
+                NetworkCapabilities.TRANSPORT_WIFI_AWARE -> "wifi-aware"
+                NetworkCapabilities.TRANSPORT_LOWPAN -> "lowpan"
+                NetworkCapabilities.TRANSPORT_USB -> "usb"
+                NetworkCapabilities.TRANSPORT_THREAD -> "thread"
+                NetworkCapabilities.TRANSPORT_SATELLITE -> "satellite"
+                else -> "unknown"
+            }
         }
     }
 }

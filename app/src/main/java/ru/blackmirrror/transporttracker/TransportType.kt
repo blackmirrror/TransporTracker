@@ -3,5 +3,6 @@ package ru.blackmirrror.transporttracker
 data class TransportType(
     val type: Int,
     val name: String,
-    val timestamp: Long
+    val timestamp: Long,
+    val source: String
 )
